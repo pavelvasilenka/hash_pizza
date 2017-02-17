@@ -8,8 +8,9 @@ class Pizza(object):
     sliceSize = 0
     countIng = 0
     pizza = None
-    alloc = None
+    alloc = []
     windows = []
+    results = []
 
     def __init__(self, filename):
         file = open(filename, "r")
@@ -17,23 +18,31 @@ class Pizza(object):
         self._initPizza(file)
         self._initWindows()
 
+    def cut(self):
+        i = 0
+        for window in self.windows:
+            print(i)
+            self.results[i] = self._cut(window)
+            i += 1
 
-    def allocateClusters(self):
-        self.windows[0].getCluster()
-        self.windows[0].moveRight()
-        self.windows[0].getCluster()
-        self.windows[0].moveRight()
-        self.windows[0].getCluster()
-        self.windows[0].moveRight()
-        self.windows[0].getCluster()
-        self.windows[0].moveRight()
-        self.windows[0].getCluster()
-        self.windows[0].moveRight()
-        self.windows[0].getCluster()
-        self.windows[0].moveRight()
-        self.windows[0].getCluster()
-        self.windows[0].moveRight()
-        self.windows[0].getCluster()
+    def _cut(self, window):
+
+        window.getCluster()
+
+        while window.moveRight():
+            window.getCluster()
+            #print("move right")
+
+        if window.moveDown():
+            #print("move down")
+            self._cut(window)
+        else :
+            return "Done"
+
+
+
+    #def allocateClusters(self, window):
+     #   window.getCluster
 
     def _initParams(self, line):
         line = line.replace("\n", "")
@@ -60,6 +69,7 @@ class Pizza(object):
     def _initWindows(self):
         cells = [[self._getPoint(x,y) for x in range(2)] for y in range(self.countIng*2)]
         self.windows.append(Window(cells, self.sizeX, self.sizeY, self.pizza, self.countIng))
+        self.results.append(None)
 
     def _getPoint(self, x, y):
         if x == 0:
@@ -77,6 +87,7 @@ class Window(object):
     sizeY = 0
     pizza = None
     countIng = 0
+    alloc = []
 
     def __init__(self, cells, sizeX, sizeY, pizza, countIng):
         self.cells = cells
@@ -84,11 +95,17 @@ class Window(object):
         self.sizeY = sizeY
         self.pizza = pizza
         self.countIng = countIng
+        self.alloc = [[0 for x in range(self.sizeY)] for y in range(self.sizeX)]
+
 
     def moveDown(self):
         if self._canMoveDown():
             for cell in self.cells:
                 cell[0] += 1
+
+            return True
+        else:
+            return False
 
 
     def moveRight(self):
@@ -96,16 +113,31 @@ class Window(object):
             for cell in self.cells:
                 cell[1] += 1
 
+            return True
+        else:
+            delta = self.cells[0][1]
+            for cell in self.cells:
+                cell[1] -= delta
+            return False
+
     #
     #
     #
     def _hasCluster(self):
-        print(self.cells)
+
+        for cell in self.cells:
+            if self.alloc[cell[0]][cell[1]] == 1:
+                return False
+
         sum = 0
         for cell in self.cells:
             sum += self.pizza[cell[0]][cell[1]]
 
-        if sum >= self.countIng:
+        if sum == self.countIng:
+            for cell in self.cells:
+                self.alloc[cell[0]][cell[1]] = 1
+
+            print(self.alloc)
             return True
 
         return False
@@ -151,7 +183,7 @@ class Cluster(object):
 #
 def main():
     p = Pizza("small.in")
-    p.allocateClusters()
+    p.cut()
 
 if __name__ == '__main__':
     main()
