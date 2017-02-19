@@ -1,5 +1,5 @@
 import copy
-import numpy as np
+import itertools
 
 #
 #
@@ -12,7 +12,8 @@ class Pizza(object):
     countIng = 0
     pizza = None
     alloc = []
-    windows = []
+    windowSets = []
+    windowTypes = []
     results = []
     clusters = []
 
@@ -26,38 +27,39 @@ class Pizza(object):
     def cut(self):
         i = 0
         self.clusters.append([])
-        for window in self.windows:
-            window.alloc = self.alloc
-            window.clusterCount = len(self.clusters[i])
+        for windowSet in self.windowSets:
+            for window in windowSet:
+                window.alloc = self.alloc
+                window.clusterCount = len(self.clusters[i])
 
-            cluster = window.getCluster(len(self.clusters[i])+1 )
-            if cluster is not None:
-                self.clusters[i].append(cluster)
+                cluster = window.getCluster(len(self.clusters[i])+1)
+                if cluster is not None:
+                    self.clusters[i].append(cluster)
 
-            self._cut(window, i)
-            self.alloc = window.alloc
-            #i +=1
+                self._cut(window, i)
+                self.alloc = window.alloc
+                #i +=1
 
-        print("\nInitial clusters:")
-        for c in self.alloc:
-            print(c)
+            print("\nInitial clusters:")
+            for c in self.alloc:
+                print(c)
 
-        print("\nstart resizing...")
-        for cluster in self.clusters[i]:
-            self.alloc = cluster.resize(self.alloc, self.sliceSize)
+            print("\nstart resizing...")
+            for cluster in self.clusters[i]:
+                self.alloc = cluster.resize(self.alloc, self.sliceSize)
 
-        print("\nCut pizza:")
-        for c in self.alloc:
-            print(c)
+            print("\nCut pizza:")
+            for c in self.alloc:
+                print(c)
 
-        sum = 0
-        for row in self.alloc:
-            for el in row:
-                if el != 0:
-                    sum += 1
+            sum = 0
+            for row in self.alloc:
+                for el in row:
+                    if el != 0:
+                        sum += 1
 
-        self.results.append(sum)
-        print("Covered ", sum, " cells out of ", self.sizeX*self.sizeY)
+            self.results.append(sum)
+            print("Covered ", sum, " cells out of ", self.sizeX*self.sizeY)
 
     def cut_1(self):
         i = 0
@@ -136,14 +138,20 @@ class Pizza(object):
             row += 1
 
     def _initWindows(self):
-        cells1 = [[0,0],[1,0]]
-        self.windows.append(Window(cells1, self.sizeX, self.sizeY, self.pizza, self.countIng))
+        self.windowTypes = []
 
-        cells = [[self._getPoint(x,y) for x in range(2)] for y in range(self.countIng*2)]
-        self.windows.append(Window(cells, self.sizeX, self.sizeY, self.pizza, self.countIng))
+        for i in range(self.countIng, self.countIng + 2):
+            if i > self.sizeX or i > self.sizeY:
+                break
+            for j in range(self.countIng, self.countIng + 2):
+                if j > self.sizeX or j > self.sizeY:
+                    break
 
-        self.results.append(None)
-        self.results.append(None)
+                if i * j != self.countIng * 2:
+                    continue
+
+                cells = [[x, y] for x in range(i) for y in range(j)]
+                self.windowTypes.append(Window(cells, self.sizeX, self.sizeY, self.pizza, self.countIng))
 
     def _getPoint(self, x, y):
         if x == 0:
