@@ -1,5 +1,7 @@
 import copy
 import numpy as np
+import sys
+
 
 #
 #
@@ -38,17 +40,17 @@ class Pizza(object):
             self.alloc = window.alloc
             #i +=1
 
-        print("\nInitial clusters:")
-        for c in self.alloc:
-            print(c)
+        #print("\nInitial clusters:")
+        #for c in self.alloc:
+        #    print(c)
 
-        print("\nstart resizing...")
+        #print("\nstart resizing...")
         for cluster in self.clusters[i]:
             self.alloc = cluster.resize(self.alloc, self.sliceSize)
 
-        print("\nCut pizza:")
-        for c in self.alloc:
-            print(c)
+        #print("\nCut pizza:")
+        #for c in self.alloc:
+        #    print(c)
 
         sum = 0
         for row in self.alloc:
@@ -57,7 +59,11 @@ class Pizza(object):
                     sum += 1
 
         self.results.append(sum)
-        print("Covered ", sum, " cells out of ", self.sizeX*self.sizeY)
+        print(len(self.clusters[0]))
+        for cluster in self.clusters[0]:
+            cluster.print()
+
+        #print("Covered ", sum, " cells out of ", self.sizeX*self.sizeY)
 
     def cut_1(self):
         i = 0
@@ -124,10 +130,10 @@ class Pizza(object):
 
     def _initPizza(self, file):
         row = 0
-        print("Pizza: ")
+        #print("Pizza: ")
         for line in file:
             line = line.replace("\n"," ").replace("T", "0 ").replace("M", "1 ").strip(" ").split(" ")
-            print(line)
+            #print(line)
             col = 0
             for ing in line:
                 self.pizza[row][col] = int(ing)
@@ -136,14 +142,30 @@ class Pizza(object):
             row += 1
 
     def _initWindows(self):
-        cells1 = [[0,0],[1,0]]
-        self.windows.append(Window(cells1, self.sizeX, self.sizeY, self.pizza, self.countIng))
 
-        cells = [[self._getPoint(x,y) for x in range(2)] for y in range(self.countIng*2)]
-        self.windows.append(Window(cells, self.sizeX, self.sizeY, self.pizza, self.countIng))
+        if self.countIng == 1:
+            self.windows.append(Window([[0, 0],[1, 0]], self.sizeX, self.sizeY, self.pizza, self.countIng))
+            self.windows.append(Window([[0, 0],[0, 1]], self.sizeX, self.sizeY, self.pizza, self.countIng))
+        elif self.countIng == 4:
 
-        self.results.append(None)
-        self.results.append(None)
+            self.windows.append(Window([[0,0], [0,1], [0,2], [0,3], [1,0], [1,1], [1,2], [1,3]], self.sizeX, self.sizeY, self.pizza, self.countIng))
+            self.windows.append(Window([[0,0], [0,1], [0,2], [0,3], [0,4], [0,5], [0,6], [0,7]], self.sizeX, self.sizeY, self.pizza, self.countIng))
+            self.windows.append(Window([[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1], [3, 0], [3, 1]], self.sizeX, self.sizeY, self.pizza, self.countIng))
+            self.windows.append(Window([[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0], [7,0]], self.sizeX, self.sizeY, self.pizza, self.countIng))
+
+        elif self.countIng == 6:
+            self.windows.append(Window([[0,0], [0,1], [0,2], [0,3], [0,4], [0,5], [0,6], [0,7], [0,8], [0,9], [0,10], [0,11]], self.sizeX, self.sizeY, self.pizza, self.countIng))
+            self.windows.append(Window([[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0], [7,0], [8,0], [9,0], [10,0], [11,0]], self.sizeX, self.sizeY, self.pizza, self.countIng))
+
+            self.windows.append(Window([[0,0], [0,1], [1,0], [1,1], [2,0], [2,1], [3,0], [3,1], [4,0], [4,1], [5,0], [5,1]], self.sizeX, self.sizeY, self.pizza, self.countIng))
+            self.windows.append(Window([[0,0], [0,1], [0,2], [0,3], [0,4], [0,5], [1,0], [1,1], [1,2], [1,3], [1,4], [1,5]], self.sizeX, self.sizeY, self.pizza, self.countIng))
+
+            self.windows.append(Window([[0,0], [0,1], [0,2], [1,0], [1,1], [1,2], [2,0], [2,1], [2,2], [3,0], [3,1], [3,2]], self.sizeX, self.sizeY, self.pizza, self.countIng))
+            self.windows.append(Window([[0,0], [0,1], [0,2], [0,3], [1,0], [1,1], [1,2], [1,3], [2,0], [2,1], [2,2], [2,3]], self.sizeX, self.sizeY, self.pizza, self.countIng))
+
+        for _ in self.windows:
+            self.results.append(None)
+
 
     def _getPoint(self, x, y):
         if x == 0:
@@ -164,6 +186,10 @@ class Cluster(object):
     def __init__(self, cells, num):
         self.cells = copy.deepcopy(cells)
         self.num = num
+
+    def print(self):
+        minRow, minCol, maxRow, maxCol = self.minMaxRowCol()
+        print(minRow, minCol,maxRow, maxCol )
 
     def resize(self, allocArea, sliceSize):
         allocArea = self._resize(allocArea,sliceSize)
@@ -375,8 +401,9 @@ class Window(object):
 #
 #
 def main():
-    p = Pizza("small.in")
+    p = Pizza("example.in")
     p.cut()
 
 if __name__ == '__main__':
+    sys.setrecursionlimit(1500)
     main()
