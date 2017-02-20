@@ -1,5 +1,4 @@
 import copy
-import numpy as np
 import sys
 
 
@@ -14,8 +13,9 @@ class Pizza(object):
     countIng = 0
     pizza = None
     alloc = []
-    windowSets = []
+    windows = []
     windowTypes = []
+    greedyWindows = []
     results = []
     clusters = []
 
@@ -25,22 +25,61 @@ class Pizza(object):
         self._initParams(file.readline())
         self._initPizza(file)
         self._initWindows()
+        self._initGreedyWindows()
+
+    def greedy_cut(self):
+        i = 0
+        self.clusters.append([])
+
+        current_iteration = 0
+
+        for window in self.greedyWindows:
+            window.alloc = self.alloc
+            window.clusterCount = len(self.clusters[i])
+
+            cluster = window.getCluster(len(self.clusters[i]) + 1)
+            if cluster is not None:
+                self.clusters[i].append(cluster)
+
+            self._cut(window, i)
+            self.alloc = window.alloc
+
+            current_iteration += 1
+
+        # print("\nIterations: ")
+        # print(current_iteration)
+
+        # print("\nInitial clusters:")
+        # for c in self.alloc:
+        #     print(c)
+
+        sum = 0
+        for row in self.alloc:
+            for el in row:
+                if el != 0:
+                    sum += 1
+
+        self.results.append(sum)
+        print("Covered ", sum, " cells out of ", self.sizeX * self.sizeY)
+
+        print(len(self.clusters[0]))
+        for cluster in self.clusters[0]:
+            cluster.print()
 
     def cut(self):
         i = 0
         self.clusters.append([])
-        for windowSet in self.windowSets:
-            for window in windowSet:
-                window.alloc = self.alloc
-                window.clusterCount = len(self.clusters[i])
+        for window in self.windows:
+            window.alloc = self.alloc
+            window.clusterCount = len(self.clusters[i])
 
-                cluster = window.getCluster(len(self.clusters[i])+1)
-                if cluster is not None:
-                    self.clusters[i].append(cluster)
+            cluster = window.getCluster(len(self.clusters[i])+1)
+            if cluster is not None:
+                self.clusters[i].append(cluster)
 
-                self._cut(window, i)
-                self.alloc = window.alloc
-                #i +=1
+            self._cut(window, i)
+            self.alloc = window.alloc
+            #i +=1
 
         #print("\nInitial clusters:")
         #for c in self.alloc:
@@ -54,18 +93,18 @@ class Pizza(object):
         #for c in self.alloc:
         #    print(c)
 
-            sum = 0
-            for row in self.alloc:
-                for el in row:
-                    if el != 0:
-                        sum += 1
+        sum = 0
+        for row in self.alloc:
+            for el in row:
+                if el != 0:
+                    sum += 1
 
         self.results.append(sum)
         print(len(self.clusters[0]))
         for cluster in self.clusters[0]:
             cluster.print()
 
-        #print("Covered ", sum, " cells out of ", self.sizeX*self.sizeY)
+        # print("Covered ", sum, " cells out of ", self.sizeX*self.sizeY)
 
     def cut_1(self):
         i = 0
@@ -129,6 +168,7 @@ class Pizza(object):
         self.sliceSize = int(line[3])
         self.pizza = [[0 for x in range(self.sizeY)] for y in range(self.sizeX)]
         self.alloc = [[0 for x in range(self.sizeY)] for y in range(self.sizeX)]
+        self.greedyWindows = []
 
     def _initPizza(self, file):
         row = 0
@@ -167,6 +207,26 @@ class Pizza(object):
 
         for _ in self.windows:
             self.results.append(None)
+
+    def _initWindowsAuto(self):
+        self.windowTypes = []
+
+        for i in range(self.countIng, min(self.countIng * 2, self.sizeX + 1)):
+            for j in range(self.countIng, min(self.countIng * 2, self.sizeY + 1)):
+                if i * j != self.countIng * 2:
+                    continue
+
+                cells = [[x, y] for x in range(i) for y in range(j)]
+                self.windowTypes.append(Window(cells, self.sizeX, self.sizeY, self.pizza, self.countIng))
+
+    def _initGreedyWindows(self):
+        for i in reversed(range(1, min(self.sizeX, self.sliceSize) + 1)):
+            for j in reversed(range(1, min(self.sizeY, self.sliceSize) + 1)):
+                if i * j < self.countIng * 2 or i * j > self.sliceSize:
+                    continue
+
+                cells = [[x, y] for x in range(i) for y in range(j)]
+                self.greedyWindows.append(Window(cells, self.sizeX, self.sizeY, self.pizza, self.countIng, True))
 
 
     def _getPoint(self, x, y):
@@ -321,13 +381,15 @@ class Window(object):
     countIng = 0
     alloc = []
     clusterCount = 0
+    greedy = False
 
-    def __init__(self, cells, sizeX, sizeY, pizza, countIng):
+    def __init__(self, cells, sizeX, sizeY, pizza, countIng, greedy=False):
         self.cells = cells
         self.sizeX = sizeX
         self.sizeY = sizeY
         self.pizza = pizza
         self.countIng = countIng
+        self.greedy = greedy
         #self.alloc = [[0 for x in range(self.sizeY)] for y in range(self.sizeX)]
 
     def moveDown(self):
@@ -364,7 +426,9 @@ class Window(object):
         for cell in self.cells:
             sum += self.pizza[cell[0]][cell[1]]
 
-        if sum == self.countIng:
+        condition = (sum == self.countIng and len(self.cells) - sum > self.countIng) if self.greedy else sum == self.countIng
+
+        if condition:
             self.clusterCount += 1
             for cell in self.cells:
                 self.alloc[cell[0]][cell[1]] = self.clusterCount
@@ -399,12 +463,11 @@ class Window(object):
 
         return False
 
-
-#
 #
 def main():
-    p = Pizza("example.in")
-    p.cut()
+    p = Pizza("big.in")
+    # p.cut()
+    p.greedy_cut()
 
 if __name__ == '__main__':
     sys.setrecursionlimit(1500)
